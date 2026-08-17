@@ -80,27 +80,39 @@ export default function Contact() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    // Simulate clean client-side submission with realistic response
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedSuccess(true);
-      // Reset form state
-      setFormData({
-        name: "",
-        phone: "",
-        email: "",
-        projectType: "",
-        location: "",
-        message: "",
+    try {
+      const res = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-      setErrors({});
-    }, 900);
+
+      if (res.ok) {
+        setSubmittedSuccess(true);
+        setFormData({
+          name: "",
+          phone: "",
+          email: "",
+          projectType: "",
+          location: "",
+          message: "",
+        });
+        setErrors({});
+      } else {
+        alert("There was an error submitting your enquiry. Please try again.");
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (

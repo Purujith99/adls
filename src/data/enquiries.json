@@ -1,0 +1,90 @@
+[
+  {
+    "name": "p",
+    "phone": "9347884834",
+    "email": "trenzz6098@gmail.com",
+    "projectType": "Landscaping",
+    "location": "hyderabdad",
+    "message": "adaw",
+    "id": "enq_msxfu40646jf",
+    "status": "New",
+    "createdAt": "2026-08-17T16:18:18.438Z",
+    "flagged": false
+  },
+  {
+    "name": "p",
+    "phone": "7894561233",
+    "email": "pk@gmail.com",
+    "projectType": "Architecture",
+    "location": "hyderabad",
+    "message": "need assistance in project",
+    "id": "enq_msxfiqg16vlt",
+    "status": "New",
+    "createdAt": "2026-08-17T16:09:27.649Z",
+    "flagged": false
+  },
+  {
+    "name": "Rajesh Goud",
+    "phone": "+91 99887 11223",
+    "email": "rajesh@goudestates.com",
+    "projectType": "Luxury Villa Architecture",
+    "location": "Banjara Hills, Hyderabad",
+    "message": "Looking to build a modern 7000 sqft luxury villa with courtyard landscape.",
+    "id": "enq_msx1ssi4t7ba",
+    "status": "New",
+    "createdAt": "2026-08-17T09:45:22.252Z",
+    "flagged": false
+  },
+  {
+    "id": "enq_101",
+    "name": "Rahul Sharma",
+    "phone": "+91 98765 43210",
+    "email": "rahul.sharma@example.com",
+    "projectType": "Luxury Villa Architecture",
+    "location": "Jubilee Hills, Hyderabad",
+    "message": "We are planning a modern 6,500 sq ft luxury 4BHK villa on a corner plot. Looking for complete architectural design, elevation concept, and site planning.",
+    "status": "New",
+    "adminNotes": "Client called regarding architectural design for Jubilee Hills plot. Follow up on Saturday morning.",
+    "flagged": true,
+    "createdAt": "2026-08-17T06:45:16.792Z"
+  },
+  {
+    "id": "enq_102",
+    "name": "Priya Varma",
+    "phone": "+91 94401 88234",
+    "email": "priya.v@techcorp.io",
+    "projectType": "Landscape Architecture & Garden",
+    "location": "Indiranagar, Bengaluru",
+    "message": "Seeking a tropical modern landscape design for our 2,500 sq ft rooftop garden & courtyard with water features and outdoor seating.",
+    "status": "Consultation Scheduled",
+    "adminNotes": "Virtual consultation fixed for Thursday at 4 PM via Google Meet.",
+    "flagged": false,
+    "createdAt": "2026-08-15T21:45:16.792Z"
+  },
+  {
+    "id": "enq_103",
+    "name": "Dr. K. S. Rao",
+    "phone": "+91 98480 12345",
+    "email": "drksrao@healthclinic.org",
+    "projectType": "Commercial & Office Architecture",
+    "location": "Visakhapatnam, AP",
+    "message": "Requirement for a 4-storey specialty clinic & corporate space (12,000 sq ft total build-up). Need eco-friendly sustainable design.",
+    "status": "Proposal Sent",
+    "adminNotes": "Detailed design proposal & fee structure emailed on Monday. Awaiting feedback from executive board.",
+    "flagged": true,
+    "createdAt": "2026-08-14T09:45:16.792Z"
+  },
+  {
+    "id": "enq_104",
+    "name": "Ananya Reddy",
+    "phone": "+91 97012 34567",
+    "email": "ananya.reddy@gmail.com",
+    "projectType": "Turnkey Interior & Architecture",
+    "location": "Gachibowli, Hyderabad",
+    "message": "Looking for comprehensive interior architecture and elevation redesign for a triplex penthouse in Financial District.",
+    "status": "In Contact",
+    "adminNotes": "Initial call done. Client requested portfolio deck of recent high-end residential projects.",
+    "flagged": false,
+    "createdAt": "2026-08-13T09:45:16.792Z"
+  }
+]
