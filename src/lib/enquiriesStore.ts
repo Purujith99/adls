@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { Enquiry } from "@/types/enquiry";
+import { Redis } from "@upstash/redis";
 
-// Local file path
+// Local file paths
 const DATA_FILE_PATH = path.join(process.cwd(), "src", "data", "enquiries.json");
-// Vercel /tmp fallback path
 const TMP_FILE_PATH = path.join("/tmp", "enquiries.json");
 
 const SEED_ENQUIRIES: Enquiry[] = [
@@ -75,8 +75,8 @@ const SEED_ENQUIRIES: Enquiry[] = [
   },
 ];
 
-// Upstash / Vercel KV REST helpers
-export function getKvConfig() {
+// Initialize Upstash Redis SDK client if env vars present
+export function getRedisClient(): Redis | null {
   const url =
     process.env.KV_REST_API_URL ||
     process.env.UPSTASH_REDIS_REST_URL ||
@@ -92,32 +92,30 @@ export function getKvConfig() {
     process.env.UPSTASH_REST_TOKEN;
 
   if (url && token) {
-    return { url, token };
+    try {
+      return new Redis({ url, token });
+    } catch (err) {
+      console.error("Redis init error:", err);
+    }
   }
   return null;
 }
 
 export async function getEnquiries(): Promise<Enquiry[]> {
-  const kv = getKvConfig();
-  if (kv) {
+  const redis = getRedisClient();
+  if (redis) {
     try {
-      const res = await fetch(`${kv.url}/get/athreya_enquiries`, {
-        headers: { Authorization: `Bearer ${kv.token}` },
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.result) {
-          const parsed = typeof json.result === "string" ? JSON.parse(json.result) : json.result;
-          if (Array.isArray(parsed)) return parsed;
-        }
+      const data = await redis.get<Enquiry[] | string>("athreya_enquiries");
+      if (data) {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
-      console.error("KV fetch error:", e);
+      console.error("Redis SDK fetch error:", e);
     }
   }
 
-  // File system fallback (Local or Vercel /tmp)
+  // Local filesystem fallback
   try {
     const filePath = fs.existsSync(DATA_FILE_PATH)
       ? DATA_FILE_PATH
@@ -137,24 +135,17 @@ export async function getEnquiries(): Promise<Enquiry[]> {
 }
 
 export async function saveEnquiries(enquiries: Enquiry[]): Promise<boolean> {
-  const kv = getKvConfig();
-  if (kv) {
+  const redis = getRedisClient();
+  if (redis) {
     try {
-      const res = await fetch(`${kv.url}/set/athreya_enquiries`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${kv.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(JSON.stringify(enquiries)),
-      });
-      if (res.ok) return true;
+      await redis.set("athreya_enquiries", JSON.stringify(enquiries));
+      return true;
     } catch (e) {
-      console.error("KV save error:", e);
+      console.error("Redis SDK save error:", e);
     }
   }
 
-  // Try saving to local file system first, fallback to /tmp on Vercel read-only
+  // Local file system write
   try {
     const targetDir = path.dirname(DATA_FILE_PATH);
     if (!fs.existsSync(targetDir)) {
@@ -163,7 +154,6 @@ export async function saveEnquiries(enquiries: Enquiry[]): Promise<boolean> {
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(enquiries, null, 2), "utf-8");
     return true;
   } catch (err) {
-    // Read-only filesystem error on Vercel Lambda
     try {
       fs.writeFileSync(TMP_FILE_PATH, JSON.stringify(enquiries, null, 2), "utf-8");
       return true;
