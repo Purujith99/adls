@@ -4,6 +4,7 @@ import {
   addEnquiry,
   updateEnquiry,
   deleteEnquiry,
+  getKvConfig,
 } from "@/lib/enquiriesStore";
 import { EnquiryStats } from "@/types/enquiry";
 
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      kvActive: !!getKvConfig(),
       enquiries,
       stats,
     });
