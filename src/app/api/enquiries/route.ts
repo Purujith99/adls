@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getEnquiries,
+  saveEnquiries,
   addEnquiry,
   updateEnquiry,
   deleteEnquiry,
@@ -145,6 +146,15 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const clearAll = searchParams.get("all") === "true";
+
+    if (clearAll) {
+      await saveEnquiries([]);
+      return NextResponse.json({
+        success: true,
+        message: "All enquiries cleared successfully",
+      });
+    }
 
     if (!id) {
       return NextResponse.json(
