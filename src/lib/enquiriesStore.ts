@@ -2,7 +2,10 @@ import fs from "fs";
 import path from "path";
 import { Enquiry } from "@/types/enquiry";
 
+// Local file path
 const DATA_FILE_PATH = path.join(process.cwd(), "src", "data", "enquiries.json");
+// Vercel /tmp fallback path
+const TMP_FILE_PATH = path.join("/tmp", "enquiries.json");
 
 const SEED_ENQUIRIES: Enquiry[] = [
   {
@@ -16,7 +19,7 @@ const SEED_ENQUIRIES: Enquiry[] = [
     status: "New",
     adminNotes: "Client called regarding architectural design for Jubilee Hills plot. Follow up on Saturday morning.",
     flagged: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
   },
   {
     id: "enq_102",
@@ -29,7 +32,7 @@ const SEED_ENQUIRIES: Enquiry[] = [
     status: "Consultation Scheduled",
     adminNotes: "Virtual consultation fixed for Thursday at 4 PM via Google Meet.",
     flagged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1.5).toISOString(), // 1.5 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1.5).toISOString(),
   },
   {
     id: "enq_103",
@@ -42,7 +45,7 @@ const SEED_ENQUIRIES: Enquiry[] = [
     status: "Proposal Sent",
     adminNotes: "Detailed design proposal & fee structure emailed on Monday. Awaiting feedback from executive board.",
     flagged: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
   },
   {
     id: "enq_104",
@@ -55,7 +58,7 @@ const SEED_ENQUIRIES: Enquiry[] = [
     status: "In Contact",
     adminNotes: "Initial call done. Client requested portfolio deck of recent high-end residential projects.",
     flagged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(), // 4 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
   },
   {
     id: "enq_105",
@@ -68,22 +71,52 @@ const SEED_ENQUIRIES: Enquiry[] = [
     status: "Completed",
     adminNotes: "Project signed & initial site survey completed successfully.",
     flagged: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
   },
 ];
 
-export function getEnquiries(): Enquiry[] {
-  try {
-    if (!fs.existsSync(DATA_FILE_PATH)) {
-      // Ensure directory exists and write initial seed data
-      const dir = path.dirname(DATA_FILE_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+// Upstash / Vercel KV REST helpers
+function getKvConfig() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url && token) {
+    return { url, token };
+  }
+  return null;
+}
+
+export async function getEnquiries(): Promise<Enquiry[]> {
+  const kv = getKvConfig();
+  if (kv) {
+    try {
+      const res = await fetch(`${kv.url}/get/athreya_enquiries`, {
+        headers: { Authorization: `Bearer ${kv.token}` },
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.result) {
+          const parsed = typeof json.result === "string" ? JSON.parse(json.result) : json.result;
+          if (Array.isArray(parsed)) return parsed;
+        }
       }
-      fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(SEED_ENQUIRIES, null, 2), "utf-8");
+    } catch (e) {
+      console.error("KV fetch error:", e);
+    }
+  }
+
+  // File system fallback (Local or Vercel /tmp)
+  try {
+    const filePath = fs.existsSync(DATA_FILE_PATH)
+      ? DATA_FILE_PATH
+      : fs.existsSync(TMP_FILE_PATH)
+      ? TMP_FILE_PATH
+      : null;
+
+    if (!filePath) {
       return SEED_ENQUIRIES;
     }
-    const data = fs.readFileSync(DATA_FILE_PATH, "utf-8");
+    const data = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(data);
   } catch (err) {
     console.error("Error reading enquiries store:", err);
@@ -91,22 +124,48 @@ export function getEnquiries(): Enquiry[] {
   }
 }
 
-export function saveEnquiries(enquiries: Enquiry[]): boolean {
+export async function saveEnquiries(enquiries: Enquiry[]): Promise<boolean> {
+  const kv = getKvConfig();
+  if (kv) {
+    try {
+      const res = await fetch(`${kv.url}/set/athreya_enquiries`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${kv.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(JSON.stringify(enquiries)),
+      });
+      if (res.ok) return true;
+    } catch (e) {
+      console.error("KV save error:", e);
+    }
+  }
+
+  // Try saving to local file system first, fallback to /tmp on Vercel read-only
   try {
-    const dir = path.dirname(DATA_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    const targetDir = path.dirname(DATA_FILE_PATH);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
     }
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(enquiries, null, 2), "utf-8");
     return true;
   } catch (err) {
-    console.error("Error saving enquiries store:", err);
-    return false;
+    // Read-only filesystem error on Vercel Lambda
+    try {
+      fs.writeFileSync(TMP_FILE_PATH, JSON.stringify(enquiries, null, 2), "utf-8");
+      return true;
+    } catch (tmpErr) {
+      console.error("Error saving to /tmp:", tmpErr);
+      return false;
+    }
   }
 }
 
-export function addEnquiry(newEnquiryData: Omit<Enquiry, "id" | "status" | "createdAt">): Enquiry {
-  const enquiries = getEnquiries();
+export async function addEnquiry(
+  newEnquiryData: Omit<Enquiry, "id" | "status" | "createdAt">
+): Promise<Enquiry> {
+  const enquiries = await getEnquiries();
   const newEnquiry: Enquiry = {
     ...newEnquiryData,
     id: "enq_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
@@ -115,24 +174,27 @@ export function addEnquiry(newEnquiryData: Omit<Enquiry, "id" | "status" | "crea
     flagged: false,
   };
   enquiries.unshift(newEnquiry);
-  saveEnquiries(enquiries);
+  await saveEnquiries(enquiries);
   return newEnquiry;
 }
 
-export function updateEnquiry(id: string, updates: Partial<Enquiry>): Enquiry | null {
-  const enquiries = getEnquiries();
+export async function updateEnquiry(
+  id: string,
+  updates: Partial<Enquiry>
+): Promise<Enquiry | null> {
+  const enquiries = await getEnquiries();
   const index = enquiries.findIndex((e) => e.id === id);
   if (index === -1) return null;
 
   enquiries[index] = { ...enquiries[index], ...updates };
-  saveEnquiries(enquiries);
+  await saveEnquiries(enquiries);
   return enquiries[index];
 }
 
-export function deleteEnquiry(id: string): boolean {
-  const enquiries = getEnquiries();
+export async function deleteEnquiry(id: string): Promise<boolean> {
+  const enquiries = await getEnquiries();
   const filtered = enquiries.filter((e) => e.id !== id);
   if (filtered.length === enquiries.length) return false;
-  saveEnquiries(filtered);
+  await saveEnquiries(filtered);
   return true;
 }

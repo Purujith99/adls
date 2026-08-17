@@ -7,13 +7,15 @@ import {
 } from "@/lib/enquiriesStore";
 import { EnquiryStats } from "@/types/enquiry";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get("status");
     const searchQuery = searchParams.get("search");
 
-    let enquiries = getEnquiries();
+    let enquiries = await getEnquiries();
 
     // Stats calculations
     const stats: EnquiryStats = {
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const created = addEnquiry({
+    const created = await addEnquiry({
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
@@ -116,7 +118,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const updated = updateEnquiry(id, updates);
+    const updated = await updateEnquiry(id, updates);
     if (!updated) {
       return NextResponse.json(
         { success: false, error: "Enquiry not found" },
@@ -149,7 +151,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const deleted = deleteEnquiry(id);
+    const deleted = await deleteEnquiry(id);
     if (!deleted) {
       return NextResponse.json(
         { success: false, error: "Enquiry not found" },
