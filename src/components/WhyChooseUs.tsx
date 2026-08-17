@@ -65,8 +65,8 @@ export default function WhyChooseUs() {
               </span>
 
               <div>
-                <div className="w-14 h-14 bg-[#063D2E] border border-[#C69A3A]/40 flex items-center justify-center mb-6 group-hover:bg-[#C69A3A] group-hover:border-[#F4EBDD] transition-colors duration-300">
-                  <div className="group-hover:text-[#063D2E] transition-colors">
+                <div className="w-14 h-14 bg-[#063D2E] border border-[#C69A3A]/40 flex items-center justify-center mb-6 transition-colors duration-300">
+                  <div>
                     {getPillarIcon(pillar.icon)}
                   </div>
                 </div>
